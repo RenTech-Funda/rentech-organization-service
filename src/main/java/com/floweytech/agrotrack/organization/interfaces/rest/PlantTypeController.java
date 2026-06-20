@@ -8,7 +8,6 @@ import com.floweytech.agrotrack.organization.interfaces.rest.resources.PlantType
 import com.floweytech.agrotrack.organization.interfaces.rest.transform.CreatePlantTypeCommandFromResourceAssembler;
 import com.floweytech.agrotrack.organization.interfaces.rest.transform.PlantTypeResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,10 +30,9 @@ public class PlantTypeController {
     }
 
     @PostMapping
-    public ResponseEntity<PlantTypeResource> createPlantType(@Valid @RequestBody CreatePlantTypeResource resource,
-                                                              HttpServletRequest request) {
+    public ResponseEntity<PlantTypeResource> createPlantType(@Valid @RequestBody CreatePlantTypeResource resource) {
         var command = CreatePlantTypeCommandFromResourceAssembler.toCommandFromResource(resource);
-        var plantTypeId = plantTypeCommandService.handle(command, request);
+        var plantTypeId = plantTypeCommandService.handle(command);
 
         var plantType = plantTypeQueryService.getByPlantTypeId(new PlantTypeId(plantTypeId));
 

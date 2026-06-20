@@ -5,13 +5,11 @@ import com.floweytech.agrotrack.organization.domain.model.valueobject.PlotId;
 import com.floweytech.agrotrack.organization.domain.model.commands.CreatePlotCommand;
 import com.floweytech.agrotrack.organization.domain.model.commands.ReassignPlantTypeCommand;
 import com.floweytech.agrotrack.organization.domain.model.commands.ReassignSizeAreaCommand;
-import com.floweytech.agrotrack.organization.domain.model.valueobject.ProfileId;
+import com.floweytech.agrotrack.organization.domain.model.valueobject.UserId;
 import com.floweytech.agrotrack.organization.domain.services.PlotCommandService;
 import com.floweytech.agrotrack.organization.infrastructure.persistence.jpa.repositories.OrganizationRepository;
 import com.floweytech.agrotrack.organization.infrastructure.persistence.jpa.repositories.PlotRepository;
-import com.floweytech.agrotrack.organization.shared.interfaces.acl.ProfileContextFacade;
-import com.floweytech.agrotrack.organization.shared.interfaces.acl.TokenContextFacade;
-import jakarta.servlet.http.HttpServletRequest;
+import com.floweytech.agrotrack.organization.shared.infrastructure.security.AuthenticatedUserProvider;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,23 +17,20 @@ public class PlotCommandServiceImpl implements PlotCommandService {
 
     private final PlotRepository plotRepository;
     private final OrganizationRepository organizationRepository;
-    private final TokenContextFacade tokenContextFacade;
-    private final ProfileContextFacade profileContextFacade;
+    private final AuthenticatedUserProvider authenticatedUserProvider;
 
     public PlotCommandServiceImpl(PlotRepository plotRepository,
                                    OrganizationRepository organizationRepository,
-                                   TokenContextFacade tokenContextFacade,
-                                   ProfileContextFacade profileContextFacade) {
+                                   AuthenticatedUserProvider authenticatedUserProvider) {
         this.plotRepository = plotRepository;
         this.organizationRepository = organizationRepository;
-        this.tokenContextFacade = tokenContextFacade;
-        this.profileContextFacade = profileContextFacade;
+        this.authenticatedUserProvider = authenticatedUserProvider;
     }
 
     /**
      * Validates that the organization exists, is active, and the user is the owner
      */
-    private void validateOrganizationOwnership(Long organizationIdValue, HttpServletRequest request) {
+    private void validateOrganizationOwnership(Long organizationIdValue) {
         var organization = organizationRepository.findByOrganizationId(
                 new com.floweytech.agrotrack.organization.domain.model.valueobject.OrganizationId(organizationIdValue))
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -46,21 +41,17 @@ public class PlotCommandServiceImpl implements PlotCommandService {
                     "Organization with id " + organizationIdValue + " is not active");
         }
 
-        Long userId = tokenContextFacade.extractUserIdFromToken(request);
+        Long userId = authenticatedUserProvider.getUserId();
 
-        Long profileId = profileContextFacade.getProfileIdByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Profile not found for user " + userId));
-
-        if (!organization.getOwnerProfileId().equals(new ProfileId(profileId))) {
+        if (!organization.getOwnerUserId().equals(new UserId(userId))) {
             throw new IllegalArgumentException(
                     "User is not the owner of organization " + organizationIdValue);
         }
     }
 
     @Override
-    public Long handle(CreatePlotCommand command, HttpServletRequest request) {
-        validateOrganizationOwnership(command.organizationId().value(), request);
+    public Long handle(CreatePlotCommand command) {
+        validateOrganizationOwnership(command.organizationId().value());
 
         var plot = new Plot(command);
         var savedPlot = plotRepository.saveAndFlush(plot);
@@ -69,26 +60,26 @@ public class PlotCommandServiceImpl implements PlotCommandService {
     }
 
     @Override
-    public void handle(ReassignPlantTypeCommand command, HttpServletRequest request) {
+    public void handle(ReassignPlantTypeCommand command) {
         var plotId = new PlotId(command.plotId());
 
         var plot = plotRepository.findByPlotId(plotId)
             .orElseThrow(() -> new IllegalArgumentException("Plot with id " + command.plotId() + " not found"));
 
-        validateOrganizationOwnership(plot.getOrganizationId().value(), request);
+        validateOrganizationOwnership(plot.getOrganizationId().value());
 
         plot.reassignPlantType(command.plantTypeId());
         plotRepository.save(plot);
     }
 
     @Override
-    public void handle(ReassignSizeAreaCommand command, HttpServletRequest request) {
+    public void handle(ReassignSizeAreaCommand command) {
         var plotId = new PlotId(command.plotId());
 
         var plot = plotRepository.findByPlotId(plotId)
             .orElseThrow(() -> new IllegalArgumentException("Plot with id " + command.plotId() + " not found"));
 
-        validateOrganizationOwnership(plot.getOrganizationId().value(), request);
+        validateOrganizationOwnership(plot.getOrganizationId().value());
 
         plot.reassignSizeArea(command.sizeArea());
         plotRepository.save(plot);

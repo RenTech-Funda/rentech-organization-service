@@ -8,8 +8,8 @@ public record OrganizationResource(
     String organizationName,
     Boolean isActive,
     Integer maxPlots,
-    Long ownerProfileId,
-    List<Long> profileIds,
+    Long ownerUserId,
+    List<Long> userIds,
     Long subscriptionId
 ) {
 }

@@ -46,7 +46,6 @@ public class PlantTypeSeeder implements CommandLineRunner {
     }
 
     private void seedPlantType(PlantTypes plantType, String name, String description) {
-        try {
             // Verificar si ya existe este tipo específico
             if (plantTypeRepository.findByName(name).isPresent()) {
                 logger.debug("PlantType {} already exists, skipping", name);
@@ -57,11 +56,8 @@ public class PlantTypeSeeder implements CommandLineRunner {
             var plantTypeEntity = new PlantType(plantType, name, description, true);
 
             // Guardar la entidad - el @PostPersist generará el PlantTypeId automáticamente
-            plantTypeRepository.save(plantTypeEntity);
+            plantTypeRepository.saveAndFlush(plantTypeEntity);
 
             logger.info("Created predefined PlantType: {} - {}", plantType, name);
-        } catch (Exception e) {
-            logger.error("Error creating PlantType {}: {}", name, e.getMessage());
-        }
     }
 }
