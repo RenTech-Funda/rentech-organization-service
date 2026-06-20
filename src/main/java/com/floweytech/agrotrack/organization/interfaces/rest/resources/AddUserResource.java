@@ -3,10 +3,9 @@ package com.floweytech.agrotrack.organization.interfaces.rest.resources;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
-public record AddProfileResource(
-    @NotNull(message = "Profile ID is required")
-    @Positive(message = "Profile ID must be positive")
-    Long profileId
+public record AddUserResource(
+    @NotNull(message = "User ID is required")
+    @Positive(message = "User ID must be positive")
+    Long userId
 ) {
 }
-

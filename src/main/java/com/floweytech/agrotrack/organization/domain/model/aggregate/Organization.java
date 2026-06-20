@@ -2,8 +2,8 @@ package com.floweytech.agrotrack.organization.domain.model.aggregate;
 
 import com.floweytech.agrotrack.organization.domain.model.commands.CreateOrganizationCommand;
 import com.floweytech.agrotrack.organization.domain.model.valueobject.OrganizationId;
-import com.floweytech.agrotrack.organization.domain.model.valueobject.ProfileId;
 import com.floweytech.agrotrack.organization.domain.model.valueobject.SubscriptionId;
+import com.floweytech.agrotrack.organization.domain.model.valueobject.UserId;
 import com.floweytech.agrotrack.organization.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -23,14 +23,14 @@ public class Organization extends AuditableAbstractAggregateRoot<Organization> {
     private Boolean isActive;
     private Integer maxPlots;
     @Embedded
-    @AttributeOverride(name = "value", column = @Column(name = "owner_profile_id"))
-    private ProfileId ownerProfileId;
+    @AttributeOverride(name = "value", column = @Column(name = "owner_user_id", nullable = false))
+    private UserId ownerUserId;
     @ElementCollection
-    @CollectionTable(name = "organization_profile_ids", joinColumns = @JoinColumn(name = "organization_db_id"))
-    @AttributeOverride(name = "value", column = @Column(name = "profile_id"))
-    private List<ProfileId> profileIds = new ArrayList<>();
+    @CollectionTable(name = "organization_user_ids", joinColumns = @JoinColumn(name = "organization_db_id"))
+    @AttributeOverride(name = "value", column = @Column(name = "user_id"))
+    private List<UserId> userIds = new ArrayList<>();
     @Embedded
-    @AttributeOverride(name = "value", column = @Column(name = "subscription_id"))
+    @AttributeOverride(name = "value", column = @Column(name = "subscription_id", nullable = false, unique = true))
     private SubscriptionId subscriptionId;
 
     protected Organization() {}
@@ -39,7 +39,7 @@ public class Organization extends AuditableAbstractAggregateRoot<Organization> {
         this.organizationName = command.organizationName();
         this.isActive = false;
         this.maxPlots = command.maxPlots();
-        this.ownerProfileId = new ProfileId(command.ownerProfileId());
+        this.ownerUserId = new UserId(command.ownerUserId());
         this.subscriptionId = new SubscriptionId(command.subscriptionId());
     }
 
@@ -48,12 +48,12 @@ public class Organization extends AuditableAbstractAggregateRoot<Organization> {
         this.organizationId = new OrganizationId(this.getId());
     }
 
-    public void addProfile(ProfileId profileId) {
-        this.profileIds.add(profileId);
+    public void addUser(UserId userId) {
+        this.userIds.add(userId);
     }
 
-    public void removeProfile(ProfileId profileId) {
-        this.profileIds.remove(profileId);
+    public void removeUser(UserId userId) {
+        this.userIds.remove(userId);
     }
 
     public void activate() {

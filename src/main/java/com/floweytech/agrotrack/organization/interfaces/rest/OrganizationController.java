@@ -1,18 +1,18 @@
 package com.floweytech.agrotrack.organization.interfaces.rest;
 
-import com.floweytech.agrotrack.organization.domain.model.queries.GetOrganizationsByProfileIdQuery;
+import com.floweytech.agrotrack.organization.domain.model.queries.GetOrganizationsByUserIdQuery;
 import com.floweytech.agrotrack.organization.domain.model.valueobject.OrganizationId;
-import com.floweytech.agrotrack.organization.domain.model.valueobject.ProfileId;
 import com.floweytech.agrotrack.organization.domain.model.valueobject.SubscriptionId;
+import com.floweytech.agrotrack.organization.domain.model.valueobject.UserId;
 import com.floweytech.agrotrack.organization.domain.services.OrganizationCommandService;
 import com.floweytech.agrotrack.organization.domain.services.OrganizationQueryService;
-import com.floweytech.agrotrack.organization.interfaces.rest.resources.AddProfileResource;
+import com.floweytech.agrotrack.organization.interfaces.rest.resources.AddUserResource;
 import com.floweytech.agrotrack.organization.interfaces.rest.resources.OrganizationResource;
-import com.floweytech.agrotrack.organization.interfaces.rest.resources.RemoveProfileResource;
+import com.floweytech.agrotrack.organization.interfaces.rest.resources.RemoveUserResource;
 import com.floweytech.agrotrack.organization.interfaces.rest.resources.UpdateOrganizationNameResource;
-import com.floweytech.agrotrack.organization.interfaces.rest.transform.AddProfileCommandFromResourceAssembler;
+import com.floweytech.agrotrack.organization.interfaces.rest.transform.AddUserCommandFromResourceAssembler;
 import com.floweytech.agrotrack.organization.interfaces.rest.transform.OrganizationResourceFromEntityAssembler;
-import com.floweytech.agrotrack.organization.interfaces.rest.transform.RemoveProfileCommandFromResourceAssembler;
+import com.floweytech.agrotrack.organization.interfaces.rest.transform.RemoveUserCommandFromResourceAssembler;
 import com.floweytech.agrotrack.organization.interfaces.rest.transform.UpdateOrganizationNameCommandFromResourceAssembler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -62,9 +62,9 @@ public class OrganizationController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/by-owner/{ownerProfileId}")
-    public ResponseEntity<List<OrganizationResource>> getOrganizationsByOwnerProfileId(@PathVariable Long ownerProfileId) {
-        var organizations = organizationQueryService.getByOwnerProfileId(new ProfileId(ownerProfileId));
+    @GetMapping("/by-owner/{ownerUserId}")
+    public ResponseEntity<List<OrganizationResource>> getOrganizationsByOwnerUserId(@PathVariable Long ownerUserId) {
+        var organizations = organizationQueryService.getByOwnerUserId(new UserId(ownerUserId));
 
         var resources = organizations.stream()
                 .map(OrganizationResourceFromEntityAssembler::toResourceFromEntity)
@@ -73,14 +73,14 @@ public class OrganizationController {
         return ResponseEntity.ok(resources);
     }
 
-    @GetMapping("/by-profile/{profileId}")
-    @Operation(summary = "Get organizations by profile ID in members list")
+    @GetMapping("/by-user/{userId}")
+    @Operation(summary = "Get organizations by user ID in members list")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Organizations retrieved successfully"),
             @ApiResponse(responseCode = "404", description = "No organizations found")
     })
-    public ResponseEntity<List<OrganizationResource>> getOrganizationsByProfileId(@PathVariable Long profileId) {
-        var query = new GetOrganizationsByProfileIdQuery(profileId);
+    public ResponseEntity<List<OrganizationResource>> getOrganizationsByUserId(@PathVariable Long userId) {
+        var query = new GetOrganizationsByUserIdQuery(userId);
         var organizations = organizationQueryService.handle(query);
 
         if (organizations.isEmpty()) {
@@ -107,12 +107,12 @@ public class OrganizationController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PutMapping("/{organizationId}/profiles/add")
-    public ResponseEntity<OrganizationResource> addProfile(
+    @PutMapping("/{organizationId}/users/add")
+    public ResponseEntity<OrganizationResource> addUser(
             @PathVariable Long organizationId,
-            @Valid @RequestBody AddProfileResource resource) {
+            @Valid @RequestBody AddUserResource resource) {
 
-        var command = AddProfileCommandFromResourceAssembler.toCommandFromResource(organizationId, resource);
+        var command = AddUserCommandFromResourceAssembler.toCommandFromResource(organizationId, resource);
         organizationCommandService.handle(command);
 
         var organization = organizationQueryService.getByOrganizationId(new OrganizationId(organizationId));
@@ -120,12 +120,12 @@ public class OrganizationController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PutMapping("/{organizationId}/profiles/remove")
-    public ResponseEntity<OrganizationResource> removeProfile(
+    @PutMapping("/{organizationId}/users/remove")
+    public ResponseEntity<OrganizationResource> removeUser(
             @PathVariable Long organizationId,
-            @Valid @RequestBody RemoveProfileResource resource) {
+            @Valid @RequestBody RemoveUserResource resource) {
 
-        var command = RemoveProfileCommandFromResourceAssembler.toCommandFromResource(organizationId, resource);
+        var command = RemoveUserCommandFromResourceAssembler.toCommandFromResource(organizationId, resource);
         organizationCommandService.handle(command);
 
         var organization = organizationQueryService.getByOrganizationId(new OrganizationId(organizationId));

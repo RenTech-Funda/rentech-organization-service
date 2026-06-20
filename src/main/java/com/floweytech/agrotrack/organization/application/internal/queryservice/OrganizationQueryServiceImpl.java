@@ -1,10 +1,10 @@
 package com.floweytech.agrotrack.organization.application.internal.queryservice;
 
 import com.floweytech.agrotrack.organization.domain.model.aggregate.Organization;
-import com.floweytech.agrotrack.organization.domain.model.queries.GetOrganizationsByProfileIdQuery;
+import com.floweytech.agrotrack.organization.domain.model.queries.GetOrganizationsByUserIdQuery;
 import com.floweytech.agrotrack.organization.domain.model.valueobject.OrganizationId;
-import com.floweytech.agrotrack.organization.domain.model.valueobject.ProfileId;
 import com.floweytech.agrotrack.organization.domain.model.valueobject.SubscriptionId;
+import com.floweytech.agrotrack.organization.domain.model.valueobject.UserId;
 import com.floweytech.agrotrack.organization.domain.services.OrganizationQueryService;
 import com.floweytech.agrotrack.organization.infrastructure.persistence.jpa.repositories.OrganizationRepository;
 import org.springframework.stereotype.Service;
@@ -27,8 +27,8 @@ public class OrganizationQueryServiceImpl implements OrganizationQueryService {
     }
 
     @Override
-    public List<Organization> getByOwnerProfileId(ProfileId ownerProfileId) {
-        return organizationRepository.findAllByOwnerProfileId(ownerProfileId);
+    public List<Organization> getByOwnerUserId(UserId ownerUserId) {
+        return organizationRepository.findAllByOwnerUserId(ownerUserId);
     }
 
     @Override
@@ -42,8 +42,8 @@ public class OrganizationQueryServiceImpl implements OrganizationQueryService {
     }
 
     @Override
-    public List<Organization> handle(GetOrganizationsByProfileIdQuery query) {
-        var profileId = new ProfileId(query.profileId());
-        return organizationRepository.findByProfileIdsContaining(profileId);
+    public List<Organization> handle(GetOrganizationsByUserIdQuery query) {
+        var userId = new UserId(query.userId());
+        return organizationRepository.findByUserIdsContaining(userId);
     }
 }

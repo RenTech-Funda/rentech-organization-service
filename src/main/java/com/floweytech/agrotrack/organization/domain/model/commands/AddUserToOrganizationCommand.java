@@ -1,8 +1,7 @@
 package com.floweytech.agrotrack.organization.domain.model.commands;
 
-public record RemoveProfileFromOrganizationCommand(
+public record AddUserToOrganizationCommand(
     Long organizationId,
-    Long profileId
+    Long userId
 ) {
 }
-

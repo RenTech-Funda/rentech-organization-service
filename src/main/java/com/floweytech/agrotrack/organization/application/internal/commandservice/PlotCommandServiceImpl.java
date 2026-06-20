@@ -5,11 +5,10 @@ import com.floweytech.agrotrack.organization.domain.model.valueobject.PlotId;
 import com.floweytech.agrotrack.organization.domain.model.commands.CreatePlotCommand;
 import com.floweytech.agrotrack.organization.domain.model.commands.ReassignPlantTypeCommand;
 import com.floweytech.agrotrack.organization.domain.model.commands.ReassignSizeAreaCommand;
-import com.floweytech.agrotrack.organization.domain.model.valueobject.ProfileId;
+import com.floweytech.agrotrack.organization.domain.model.valueobject.UserId;
 import com.floweytech.agrotrack.organization.domain.services.PlotCommandService;
 import com.floweytech.agrotrack.organization.infrastructure.persistence.jpa.repositories.OrganizationRepository;
 import com.floweytech.agrotrack.organization.infrastructure.persistence.jpa.repositories.PlotRepository;
-import com.floweytech.agrotrack.organization.shared.interfaces.acl.ProfileContextFacade;
 import com.floweytech.agrotrack.organization.shared.interfaces.acl.TokenContextFacade;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
@@ -20,16 +19,13 @@ public class PlotCommandServiceImpl implements PlotCommandService {
     private final PlotRepository plotRepository;
     private final OrganizationRepository organizationRepository;
     private final TokenContextFacade tokenContextFacade;
-    private final ProfileContextFacade profileContextFacade;
 
     public PlotCommandServiceImpl(PlotRepository plotRepository,
                                    OrganizationRepository organizationRepository,
-                                   TokenContextFacade tokenContextFacade,
-                                   ProfileContextFacade profileContextFacade) {
+                                   TokenContextFacade tokenContextFacade) {
         this.plotRepository = plotRepository;
         this.organizationRepository = organizationRepository;
         this.tokenContextFacade = tokenContextFacade;
-        this.profileContextFacade = profileContextFacade;
     }
 
     /**
@@ -48,11 +44,7 @@ public class PlotCommandServiceImpl implements PlotCommandService {
 
         Long userId = tokenContextFacade.extractUserIdFromToken(request);
 
-        Long profileId = profileContextFacade.getProfileIdByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Profile not found for user " + userId));
-
-        if (!organization.getOwnerProfileId().equals(new ProfileId(profileId))) {
+        if (!organization.getOwnerUserId().equals(new UserId(userId))) {
             throw new IllegalArgumentException(
                     "User is not the owner of organization " + organizationIdValue);
         }

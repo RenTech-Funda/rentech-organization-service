@@ -1,7 +1,7 @@
 package com.floweytech.agrotrack.organization.interfaces.rest.transform;
 
 import com.floweytech.agrotrack.organization.domain.model.aggregate.Organization;
-import com.floweytech.agrotrack.organization.domain.model.valueobject.ProfileId;
+import com.floweytech.agrotrack.organization.domain.model.valueobject.UserId;
 import com.floweytech.agrotrack.organization.interfaces.rest.resources.OrganizationResource;
 
 public class OrganizationResourceFromEntityAssembler {
@@ -13,9 +13,9 @@ public class OrganizationResourceFromEntityAssembler {
             entity.getOrganizationName(),
             entity.getIsActive(),
             entity.getMaxPlots(),
-            entity.getOwnerProfileId().value(),
-            entity.getProfileIds().stream()
-                .map(ProfileId::value)
+            entity.getOwnerUserId().value(),
+            entity.getUserIds().stream()
+                .map(UserId::value)
                 .toList(),
             entity.getSubscriptionId().value()
         );

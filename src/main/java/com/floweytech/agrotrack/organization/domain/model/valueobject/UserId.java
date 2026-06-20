@@ -3,15 +3,15 @@ package com.floweytech.agrotrack.organization.domain.model.valueobject;
 import jakarta.persistence.Embeddable;
 
 @Embeddable
-public record ProfileId(Long value) {
+public record UserId(Long value) {
 
-    public ProfileId() {
+    public UserId() {
         this(null);
     }
-    public ProfileId {
+
+    public UserId {
         if (value == null || value <= 0) {
-            throw new IllegalArgumentException("ProfileId must be a positive non-null value.");
+            throw new IllegalArgumentException("UserId must be a positive non-null value.");
         }
     }
-
 }

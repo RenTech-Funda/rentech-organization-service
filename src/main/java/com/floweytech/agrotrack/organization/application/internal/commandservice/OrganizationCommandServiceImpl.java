@@ -1,25 +1,21 @@
 package com.floweytech.agrotrack.organization.application.internal.commandservice;
 
-import com.floweytech.agrotrack.organization.domain.model.commands.AddProfileToOrganizationCommand;
-import com.floweytech.agrotrack.organization.domain.model.commands.RemoveProfileFromOrganizationCommand;
+import com.floweytech.agrotrack.organization.domain.model.commands.AddUserToOrganizationCommand;
+import com.floweytech.agrotrack.organization.domain.model.commands.RemoveUserFromOrganizationCommand;
 import com.floweytech.agrotrack.organization.domain.model.commands.UpdateOrganizationNameCommand;
 import com.floweytech.agrotrack.organization.domain.model.valueobject.OrganizationId;
-import com.floweytech.agrotrack.organization.domain.model.valueobject.ProfileId;
+import com.floweytech.agrotrack.organization.domain.model.valueobject.UserId;
 import com.floweytech.agrotrack.organization.domain.services.OrganizationCommandService;
 import com.floweytech.agrotrack.organization.infrastructure.persistence.jpa.repositories.OrganizationRepository;
-import com.floweytech.agrotrack.organization.shared.interfaces.acl.ProfileContextFacade;
 import org.springframework.stereotype.Service;
 
 @Service
 public class OrganizationCommandServiceImpl implements OrganizationCommandService {
 
     private final OrganizationRepository organizationRepository;
-    private final ProfileContextFacade profileContextFacade;
 
-    public OrganizationCommandServiceImpl(OrganizationRepository organizationRepository,
-                                           ProfileContextFacade profileContextFacade) {
+    public OrganizationCommandServiceImpl(OrganizationRepository organizationRepository) {
         this.organizationRepository = organizationRepository;
-        this.profileContextFacade = profileContextFacade;
     }
 
     @Override
@@ -34,35 +30,31 @@ public class OrganizationCommandServiceImpl implements OrganizationCommandServic
     }
 
     @Override
-    public void handle(AddProfileToOrganizationCommand command) {
+    public void handle(AddUserToOrganizationCommand command) {
         var organizationId = new OrganizationId(command.organizationId());
 
         var organization = organizationRepository.findByOrganizationId(organizationId)
             .orElseThrow(() -> new IllegalArgumentException("Organization with id " + command.organizationId() + " not found"));
 
-        if (!profileContextFacade.existsByProfileId(command.profileId())) {
-            throw new IllegalArgumentException("Profile with id " + command.profileId() + " not found");
+        var userId = new UserId(command.userId());
+
+        if (organization.getUserIds().contains(userId)) {
+            throw new IllegalArgumentException("User with id " + command.userId() + " is already in the organization");
         }
 
-        var profileId = new ProfileId(command.profileId());
-
-        if (organization.getProfileIds().contains(profileId)) {
-            throw new IllegalArgumentException("Profile with id " + command.profileId() + " is already in the organization");
-        }
-
-        organization.addProfile(profileId);
+        organization.addUser(userId);
         organizationRepository.save(organization);
     }
 
     @Override
-    public void handle(RemoveProfileFromOrganizationCommand command) {
+    public void handle(RemoveUserFromOrganizationCommand command) {
         var organizationId = new OrganizationId(command.organizationId());
 
         var organization = organizationRepository.findByOrganizationId(organizationId)
             .orElseThrow(() -> new IllegalArgumentException("Organization with id " + command.organizationId() + " not found"));
 
-        var profileId = new ProfileId(command.profileId());
-        organization.removeProfile(profileId);
+        var userId = new UserId(command.userId());
+        organization.removeUser(userId);
         organizationRepository.save(organization);
     }
 }
