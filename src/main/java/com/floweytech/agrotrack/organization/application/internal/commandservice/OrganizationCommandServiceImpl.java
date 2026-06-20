@@ -7,15 +7,19 @@ import com.floweytech.agrotrack.organization.domain.model.valueobject.Organizati
 import com.floweytech.agrotrack.organization.domain.model.valueobject.UserId;
 import com.floweytech.agrotrack.organization.domain.services.OrganizationCommandService;
 import com.floweytech.agrotrack.organization.infrastructure.persistence.jpa.repositories.OrganizationRepository;
+import com.floweytech.agrotrack.organization.shared.infrastructure.security.AuthenticatedUserProvider;
 import org.springframework.stereotype.Service;
 
 @Service
 public class OrganizationCommandServiceImpl implements OrganizationCommandService {
 
     private final OrganizationRepository organizationRepository;
+    private final AuthenticatedUserProvider authenticatedUserProvider;
 
-    public OrganizationCommandServiceImpl(OrganizationRepository organizationRepository) {
+    public OrganizationCommandServiceImpl(OrganizationRepository organizationRepository,
+                                          AuthenticatedUserProvider authenticatedUserProvider) {
         this.organizationRepository = organizationRepository;
+        this.authenticatedUserProvider = authenticatedUserProvider;
     }
 
     @Override
@@ -24,6 +28,8 @@ public class OrganizationCommandServiceImpl implements OrganizationCommandServic
 
         var organization = organizationRepository.findByOrganizationId(organizationId)
             .orElseThrow(() -> new IllegalArgumentException("Organization with id " + command.organizationId() + " not found"));
+
+        validateOwnership(organization);
 
         organization.setOrganizationName(command.organizationName());
         organizationRepository.save(organization);
@@ -35,6 +41,8 @@ public class OrganizationCommandServiceImpl implements OrganizationCommandServic
 
         var organization = organizationRepository.findByOrganizationId(organizationId)
             .orElseThrow(() -> new IllegalArgumentException("Organization with id " + command.organizationId() + " not found"));
+
+        validateOwnership(organization);
 
         var userId = new UserId(command.userId());
 
@@ -53,8 +61,18 @@ public class OrganizationCommandServiceImpl implements OrganizationCommandServic
         var organization = organizationRepository.findByOrganizationId(organizationId)
             .orElseThrow(() -> new IllegalArgumentException("Organization with id " + command.organizationId() + " not found"));
 
+        validateOwnership(organization);
+
         var userId = new UserId(command.userId());
         organization.removeUser(userId);
         organizationRepository.save(organization);
+    }
+
+    private void validateOwnership(com.floweytech.agrotrack.organization.domain.model.aggregate.Organization organization) {
+        var isOwner = organization.getOwnerUserId().value().equals(authenticatedUserProvider.getUserId());
+        if (!isOwner && !authenticatedUserProvider.isAdministrator()) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Only the organization owner or an administrator can modify it");
+        }
     }
 }

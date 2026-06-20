@@ -14,6 +14,7 @@ import com.floweytech.agrotrack.organization.interfaces.rest.transform.AddUserCo
 import com.floweytech.agrotrack.organization.interfaces.rest.transform.OrganizationResourceFromEntityAssembler;
 import com.floweytech.agrotrack.organization.interfaces.rest.transform.RemoveUserCommandFromResourceAssembler;
 import com.floweytech.agrotrack.organization.interfaces.rest.transform.UpdateOrganizationNameCommandFromResourceAssembler;
+import com.floweytech.agrotrack.organization.shared.infrastructure.security.AuthenticatedUserProvider;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -31,39 +32,43 @@ public class OrganizationController {
 
     private final OrganizationCommandService organizationCommandService;
     private final OrganizationQueryService organizationQueryService;
+    private final AuthenticatedUserProvider authenticatedUserProvider;
 
     public OrganizationController(OrganizationCommandService organizationCommandService,
-                                   OrganizationQueryService organizationQueryService) {
+                                   OrganizationQueryService organizationQueryService,
+                                   AuthenticatedUserProvider authenticatedUserProvider) {
         this.organizationCommandService = organizationCommandService;
         this.organizationQueryService = organizationQueryService;
+        this.authenticatedUserProvider = authenticatedUserProvider;
     }
 
     @GetMapping("/{organizationId}")
     public ResponseEntity<OrganizationResource> getOrganizationById(@PathVariable Long organizationId) {
         var organization = organizationQueryService.getByOrganizationId(new OrganizationId(organizationId));
 
-        return organization.map(org -> ResponseEntity.ok(OrganizationResourceFromEntityAssembler.toResourceFromEntity(org)))
-                .orElse(ResponseEntity.notFound().build());
+        return authorizedResource(organization);
     }
 
     @GetMapping("/by-name/{organizationName}")
     public ResponseEntity<OrganizationResource> getOrganizationByName(@PathVariable String organizationName) {
         var organization = organizationQueryService.getByOrganizationName(organizationName);
 
-        return organization.map(org -> ResponseEntity.ok(OrganizationResourceFromEntityAssembler.toResourceFromEntity(org)))
-                .orElse(ResponseEntity.notFound().build());
+        return authorizedResource(organization);
     }
 
     @GetMapping("/by-subscription/{subscriptionId}")
     public ResponseEntity<OrganizationResource> getOrganizationBySubscriptionId(@PathVariable Long subscriptionId) {
         var organization = organizationQueryService.getBySubscriptionId(new SubscriptionId(subscriptionId));
 
-        return organization.map(org -> ResponseEntity.ok(OrganizationResourceFromEntityAssembler.toResourceFromEntity(org)))
-                .orElse(ResponseEntity.notFound().build());
+        return authorizedResource(organization);
     }
 
     @GetMapping("/by-owner/{ownerUserId}")
     public ResponseEntity<List<OrganizationResource>> getOrganizationsByOwnerUserId(@PathVariable Long ownerUserId) {
+        if (!authenticatedUserProvider.getUserId().equals(ownerUserId)
+                && !authenticatedUserProvider.isAdministrator()) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
         var organizations = organizationQueryService.getByOwnerUserId(new UserId(ownerUserId));
 
         var resources = organizations.stream()
@@ -80,6 +85,10 @@ public class OrganizationController {
             @ApiResponse(responseCode = "404", description = "No organizations found")
     })
     public ResponseEntity<List<OrganizationResource>> getOrganizationsByUserId(@PathVariable Long userId) {
+        if (!authenticatedUserProvider.getUserId().equals(userId)
+                && !authenticatedUserProvider.isAdministrator()) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
         var query = new GetOrganizationsByUserIdQuery(userId);
         var organizations = organizationQueryService.handle(query);
 
@@ -131,5 +140,24 @@ public class OrganizationController {
         var organization = organizationQueryService.getByOrganizationId(new OrganizationId(organizationId));
         return organization.map(org -> ResponseEntity.ok(OrganizationResourceFromEntityAssembler.toResourceFromEntity(org)))
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    private ResponseEntity<OrganizationResource> authorizedResource(
+            java.util.Optional<com.floweytech.agrotrack.organization.domain.model.aggregate.Organization> organization) {
+        if (organization.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!canAccess(organization.get())) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(
+                OrganizationResourceFromEntityAssembler.toResourceFromEntity(organization.get()));
+    }
+
+    private boolean canAccess(com.floweytech.agrotrack.organization.domain.model.aggregate.Organization organization) {
+        var userId = new UserId(authenticatedUserProvider.getUserId());
+        return authenticatedUserProvider.isAdministrator()
+                || organization.getOwnerUserId().equals(userId)
+                || organization.getUserIds().contains(userId);
     }
 }
